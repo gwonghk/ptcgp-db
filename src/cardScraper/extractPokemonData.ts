@@ -1,60 +1,34 @@
 import * as cheerio from "cheerio";
 
 const regexFor = {
-  numberBeforeHP: /\d+(?=\s*HP)/gi,
   firstWord: /[A-Za-z]+/,
-  wordBetweenHyphens: /(?<=-\s*)\S.*\S(?=\s*-\s*)/,
-  getIdFromURL: /(\d+)(?=$)/,
-  getReleasePack: /(?<=\/cards\/)(\w+)/,
-  getNumbersFromEnd: /\d+$/,
-  getMiddleStringWithoutFirstWordLastNumber: /^[^\s]+\s+([A-Za-z ]+)\s+\d+$/,
-  getWordAfterWeakness: /(?<=Weakness:\s*)(\w+)/,
-  getStringAfterArtist: /(?<=artist:\s*)(\w+)/,
   getNumberAfterRetreat: /(?<=Retreat:\s*)\d+/,
+  getNumbersFromEnd: /\d+$/,
+  getWordAfterPokemon: /(?<=Pokémon-)[^-]+/gm,
+  getWordAfterWeakness: /(?<=Weakness:\s*)(\w+)/,
+  numberBeforeHP: /\d+(?=\s*HP)/gi,
   trimSpacesBeforeAndAfterWords: /(?!\b\s+\b)\s+/gm,
+  wordBetweenDots: /(?<=·\s*)(.*?)(?=\s*·)/,
 };
 
 const selector = {
-  cardImage: ".card-image img",
+  allAtks: "div.card-text-attack",
+  atkEffect: ".card-text-attack-effect",
+  atkEnergyCost: "span.ptcg-symbol",
+  atkInfo: "p.card-text-attack-info",
+  cardPrintsCurrent: ".card-prints-current .prints-current-details",
+  cardTextFirstRow: "p.card-text-title:contains('HP')",
+  cardTextSecondRow: "p.card-text-type",
   cardTextSection:
     ".card-details .card-details-main .card-text .card-text-section",
   cardTitle: ".card-text-title .card-text-name",
-  cardTextFirstRow: "p.card-text-title:contains('HP')",
-  cardTextSecondRow: "p.card-text-type",
   evolutionStage: ".card-text-title .card-text-type",
-  allAtks: "div.card-text-attack",
-  atkInfo: "p.card-text-attack-info",
-  atkEnergyCost: "span.ptcg-symbol",
-  atkEffect: ".card-text-attack-effect",
   weaknessRetreat: ".card-text-wrr",
-  artist: ".card-text-artist a",
-  cardPrints: ".card-prints",
-  cardPrintsCurrent: ".card-prints-current .prints-current-details",
   cardPrintsVersions: ".card-prints-versions",
 };
 
-const typeEnum = {
-  G: "grass",
-  C: "colorless",
-};
-
-type CardData = {
-  color: string;
-};
-
-const main = async (url: string) => {
-  const res = await fetch(url);
-  const html = await res.text();
-  const $ = cheerio.load(html);
-
-  const extracted = $.extract({
-    image: {
-      selector: selector.cardImage,
-      value: "src",
-    },
-    title: {
-      selector: `${selector.cardTextSection} ${selector.cardTitle}`,
-    },
+const extractedPokemonData = ($: cheerio.CheerioAPI) =>
+  $.extract({
     isEx: {
       selector: `${selector.cardTextSection} ${selector.cardTitle}`,
       value: (el) => $(el).text().includes(" ex"),
@@ -90,9 +64,11 @@ const main = async (url: string) => {
         const str = $(el)
           .contents()
           .text()
-          .trim()
-          .match(regexFor.wordBetweenHyphens)?.[0]
-          ?.toLowerCase();
+          ?.replace(regexFor.trimSpacesBeforeAndAfterWords, "")
+          ?.match(regexFor.getWordAfterPokemon)?.[0]
+          ?.toLowerCase()
+          ?.replace(" ", "-");
+
         return str;
       },
     },
@@ -110,7 +86,8 @@ const main = async (url: string) => {
           const energyCost = $(el).find(selector.atkEnergyCost).text().trim();
 
           const atkInfo = $(el).find(selector.atkInfo).text().trim();
-          const damage = Number(atkInfo.match(regexFor.getNumbersFromEnd)?.[0]);
+          const damage =
+            Number(atkInfo.match(regexFor.getNumbersFromEnd)?.[0]) || 0;
           const attackName = atkInfo.split(" ").slice(1, -1).join(" ").trim();
           const description = $(el)
             .find(".card-text-attack-effect")
@@ -132,7 +109,8 @@ const main = async (url: string) => {
         const weakness = $(el)
           .html()
           ?.replace(/(\r\n|\n|\r| )/gm, "")
-          .match(regexFor.getWordAfterWeakness)?.[0];
+          .match(regexFor.getWordAfterWeakness)?.[0]
+          ?.toLowerCase();
         return weakness;
       },
     },
@@ -146,15 +124,7 @@ const main = async (url: string) => {
         return Number(retreat);
       },
     },
-    artist: {
-      selector: `${selector.cardTextSection}${selector.artist}`,
-      value: (el) => {
-        const str = $(el)
-          .attr("href")
-          ?.match(regexFor.getStringAfterArtist)?.[0];
-        return str;
-      },
-    },
+
     rarity: {
       selector: `${selector.cardPrintsCurrent}`,
       value: (el) => {
@@ -162,22 +132,28 @@ const main = async (url: string) => {
           .find("span")
           .not(".text-lg")
           .text()
-          ?.replace(regexFor.trimSpacesBeforeAndAfterWords, "");
+          ?.replace(regexFor.trimSpacesBeforeAndAfterWords, "")
+          ?.match(regexFor.wordBetweenDots)?.[0];
 
-        console.log(str);
+        return str;
       },
     },
+
+    alternativeVersions: [
+      {
+        selector: `${selector.cardPrintsVersions} tr:not(.current) a`,
+        value: (el) => {
+          const [cardId, cardPackId] = $(el)
+            .attr("href")
+            ?.split("/")
+            .reverse() as any[];
+          return {
+            cardId: Number(cardId),
+            cardPackId,
+          };
+        },
+      },
+    ],
   });
 
-  const id = Number(url.match(regexFor.getIdFromURL)?.[0]);
-  const cardpackId = url.match(regexFor.getReleasePack)?.[0];
-
-  const result = {
-    ...extracted,
-    id,
-    cardpackId,
-  };
-  console.log(result);
-};
-
-export default main;
+export default extractedPokemonData;
