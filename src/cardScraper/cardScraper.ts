@@ -20,6 +20,7 @@ const selector = {
     ".card-details .card-details-main .card-text .card-text-section",
   cardTextSecondRow: "p.card-text-type",
   cardPrintsCurrent: ".card-prints-current .prints-current-details",
+  cardTitle: ".card-text-title .card-text-name",
 };
 
 const cardScraper = async (url: string) => {
@@ -31,7 +32,7 @@ const cardScraper = async (url: string) => {
   const cardPackId =
     (url.match(regexFor.getReleasePack)?.[0] as CardPackIds) ?? "Error";
 
-  const extractedCardData = $.extract({
+  const baseData = $.extract({
     image: {
       selector: selector.cardImage,
       value: "src",
@@ -74,10 +75,12 @@ const cardScraper = async (url: string) => {
     },
   });
 
-  const pokemonData = extractedPokemonData($);
+  const cardType: CardTypes = baseData.cardType;
+  const cardTypeData = cardType === "trainer" ? {} : extractedPokemonData($);
 
   const result = {
-    ...pokemonData,
+    ...baseData,
+    ...cardTypeData,
     cardId,
     cardPackId,
   };
