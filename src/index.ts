@@ -20,12 +20,12 @@ const baseURL = "https://quotes.toscrape.com";
 const baseURL2 = "https://sandbox.oxylabs.io/products/1";
 const baseURL4 = "https://gamevlg.com/pokemon-tcg-pocket/cards/1";
 
-const baseURL3 = "https://pocket.limitlesstcg.com/cards/A1/4";
+const pokemonURL = "https://pocket.limitlesstcg.com/cards/A1/226";
 // 4 - pokemon - venusaur
 // 226 - trainer/supporter
 // 217 - trainer/item
 const potionURL = "https://pocket.limitlesstcg.com/cards/P-A/1";
 const cardPackUrl = "https://pocket.limitlesstcg.com/cards/A1";
 
-cardScraper(baseURL3);
+cardScraper(pokemonURL);
 // packScraper(cardPackUrl);

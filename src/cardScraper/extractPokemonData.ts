@@ -17,14 +17,13 @@ const selector = {
   atkEnergyCost: "span.ptcg-symbol",
   atkInfo: "p.card-text-attack-info",
   cardPrintsCurrent: ".card-prints-current .prints-current-details",
-  cardTextFirstRow: "p.card-text-title:contains('HP')",
+  cardTextFirstRow: "p.card-text-title",
   cardTextSecondRow: "p.card-text-type",
   cardTextSection:
     ".card-details .card-details-main .card-text .card-text-section",
   cardTitle: ".card-text-title .card-text-name",
   evolutionStage: ".card-text-title .card-text-type",
   weaknessRetreat: ".card-text-wrr",
-  cardPrintsVersions: ".card-prints-versions",
 };
 
 const extractedPokemonData = ($: cheerio.CheerioAPI) =>
@@ -138,22 +137,6 @@ const extractedPokemonData = ($: cheerio.CheerioAPI) =>
         return str;
       },
     },
-
-    alternativeVersions: [
-      {
-        selector: `${selector.cardPrintsVersions} tr:not(.current) a`,
-        value: (el) => {
-          const [cardId, cardPackId] = $(el)
-            .attr("href")
-            ?.split("/")
-            .reverse() as any[];
-          return {
-            cardId: Number(cardId),
-            cardPackId,
-          };
-        },
-      },
-    ],
   });
 
 export default extractedPokemonData;

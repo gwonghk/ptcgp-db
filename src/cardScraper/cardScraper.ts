@@ -1,7 +1,7 @@
 import * as cheerio from "cheerio";
 import type { CardPackIds, CardTypes } from "../types/baseCard.ts";
-import type Card from "../types/card.ts";
 import extractedPokemonData from "./extractPokemonData.ts";
+import extractedTrainerData from "./extractTrainerData.ts";
 
 const regexFor = {
   wordBetweenHyphens: /(?<=-\s*)\S.*\S(?=\s*-\s*)/,
@@ -21,6 +21,7 @@ const selector = {
   cardTextSecondRow: "p.card-text-type",
   cardPrintsCurrent: ".card-prints-current .prints-current-details",
   cardTitle: ".card-text-title .card-text-name",
+  cardPrintsVersions: ".card-prints-versions",
 };
 
 const cardScraper = async (url: string) => {
@@ -73,10 +74,26 @@ const cardScraper = async (url: string) => {
         return str;
       },
     },
+    alternativeVersions: [
+      {
+        selector: `${selector.cardPrintsVersions} tr:not(.current) a`,
+        value: (el) => {
+          const [cardId, cardPackId] = $(el)
+            .attr("href")
+            ?.split("/")
+            .reverse() as any[];
+          return {
+            cardId: Number(cardId),
+            cardPackId,
+          };
+        },
+      },
+    ],
   });
 
   const cardType: CardTypes = baseData.cardType;
-  const cardTypeData = cardType === "trainer" ? {} : extractedPokemonData($);
+  const cardTypeData =
+    cardType === "trainer" ? extractedTrainerData($) : extractedPokemonData($);
 
   const result = {
     ...baseData,
