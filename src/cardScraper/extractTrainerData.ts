@@ -19,6 +19,7 @@ const extractedTrainerData = ($: cheerio.CheerioAPI) =>
         const str = $(el)
           .text()
           ?.replace(regexFor.trimSpacesBeforeAndAfterWords, "")
+          ?.toLowerCase()
           ?.split("-")
           ?.at(-1);
         return str;

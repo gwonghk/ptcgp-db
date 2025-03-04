@@ -69,6 +69,7 @@ const cardScraper = async (url: string) => {
           .not(".text-lg")
           .text()
           ?.replace(regexFor.trimSpacesBeforeAndAfterWords, "")
+          .toLocaleLowerCase()
           .split("·")
           .at(-1);
         return str;
@@ -91,7 +92,7 @@ const cardScraper = async (url: string) => {
     ],
   });
 
-  const cardType: CardTypes = baseData.cardType;
+  const cardType = baseData.cardType;
   const cardTypeData =
     cardType === "trainer" ? extractedTrainerData($) : extractedPokemonData($);
 

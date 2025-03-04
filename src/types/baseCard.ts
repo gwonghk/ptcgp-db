@@ -1,5 +1,5 @@
-export type CardPackIds = "A1" | undefined;
-export type CardTypes = "pokémon" | "trainer" | undefined;
+export type CardPackIds = "P-A" | "A1" | "A1a" | "A2" | "A2a";
+export type CardTypes = "pokémon" | "trainer";
 type Rarities = "◊";
 
 type BaseCard = {
